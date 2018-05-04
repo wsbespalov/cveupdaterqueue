@@ -1,12 +1,21 @@
 SETTINGS = dict(
-    cache = dict(
+    cache=dict(
         host='localhost',
         port=6379,
         db=1
     ),
-    queue = dict(
+    queues=dict(
         create="create_queue",
         delete="delete_queue",
         update="update_queue"
+    ),
+    collections=dict(
+        separator="::",
+        index="index",
+        vulners="vulners"
+    ),
+    pika=dict(
+        host="localhost",
+        no_ack=True
     )
 )

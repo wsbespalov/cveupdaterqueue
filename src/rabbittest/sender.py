@@ -1,7 +1,7 @@
 import pika
 import json
 
-queue_name_create = "create"
+queue_name_create = "create_queue"
 queue_name_update = "update"
 
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))

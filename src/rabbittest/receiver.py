@@ -4,7 +4,9 @@ import pika
 queue_name_create = "create"
 queue_name_update = "update"
 
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+connection = pika.BlockingConnection(
+    pika.ConnectionParameters(
+        host='localhost'))
 
 channel = connection.channel()
 
