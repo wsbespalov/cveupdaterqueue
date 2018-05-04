@@ -10,7 +10,9 @@ channel = connection.channel()
 
 channel.queue_declare(queue=queue_name_create)
 
-body = {"message": "create table"}
+body = {
+    "message": "create vulner"
+}
 body = json.dumps(body)
 
 channel.basic_publish(exchange='', routing_key=queue_name_create, body=body)

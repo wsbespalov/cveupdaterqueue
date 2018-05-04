@@ -4,6 +4,11 @@ SETTINGS = dict(
         port=6379,
         db=1
     ),
+    storage=dict(
+        host='localhost',
+        port=6379,
+        db=2
+    ),
     queues=dict(
         create="create_queue",
         delete="delete_queue",

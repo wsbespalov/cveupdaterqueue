@@ -12,6 +12,19 @@ cache = redis.StrictRedis(
     port=config.cache.port,
     db=config.cache.db
 )
+storage = redis.StrictRedis(
+    host=config.storage.host,
+    port=config.storage.port,
+    db=config.storage.db
+)
+
+
+class CacheConnector(object):
+    pass
+
+
+class StorageConnector(object):
+    pass
 
 class TaskListenerBase(ABC):
     connection = None

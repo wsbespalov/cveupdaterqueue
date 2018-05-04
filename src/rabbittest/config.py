@@ -4,6 +4,12 @@ class Redis(object):
         self.port = cache.get("port", 6379)
         self.db = cache.get("db", 1)
 
+class Storage(object):
+    def __init__(self, storage={}):
+        self.host = storage.get("host", "localhost")
+        self.port = storage.get("port", 6379)
+        self.db = storage.get("db", 2)
+
 class Queues(object):
     def __init__(self, queues={}):
         self.create = queues.get("create", "create_queue")
@@ -25,6 +31,7 @@ class Config(object):
     def __init__(self, settings={}):
         self.settings = settings
         self.cache = Redis(settings.get("cache", {}))
+        self.storage = Storage(settings.get("storage", {}))
         self.queues = Queues(settings.get("queues", {}))
         self.collections = Collections(settings.get("collections", {}))
         self.pika = Pika(settings.get("pika", {}))
