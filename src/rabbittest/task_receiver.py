@@ -1,5 +1,6 @@
 import pika
 import redis
+from abc import ABC, abstractmethod
 
 import settings
 import config
@@ -12,9 +13,21 @@ cache = redis.StrictRedis(
     db=config.cache.db
 )
 
+class TaskListenerBase(ABC):
+    connection = None
+    channel = None
 
-class TaskListener(object):
+    @abstractmethod
+    def callback(self, ch, method, properties, body):
+        pass
 
+    @abstractmethod
+    def basic_consume(self):
+        pass
+   
+
+class CreateTaskListener(TaskListenerBase):
+    
     def __init__(self, *args, **kwargs):
         self.connection = pika.BlockingConnection(
             pika.ConnectionParameters(
@@ -30,6 +43,7 @@ class TaskListener(object):
         print('[x] Receive {}'.format(body))
 
     def basic_consume(self):
+        print('Start consuming...  Type Ctrl+C to exit...')
         self.channel.basic_consume(
             self.callback,
             queue=config.queues.create,
@@ -37,8 +51,7 @@ class TaskListener(object):
         )
         self.channel.start_consuming()
 
-t = TaskListener()
-t.basic_consume()
-    
 
-    
+
+t = CreateTaskListener()
+t.basic_consume()
