@@ -2,10 +2,10 @@ import pika
 import redis
 from abc import ABC, abstractmethod
 
-import settings
-import config
+from .settings import SETTINGS
+from .config import Config
 
-config = config.Config(settings.SETTINGS)
+config = Config(SETTINGS)
 
 cache = redis.StrictRedis(
     host=config.cache.host,

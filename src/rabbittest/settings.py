@@ -2,12 +2,12 @@ SETTINGS = dict(
     cache=dict(
         host='localhost',
         port=6379,
-        db=1
+        db=3
     ),
     storage=dict(
         host='localhost',
         port=6379,
-        db=2
+        db=4
     ),
     queues=dict(
         create="create_queue",
