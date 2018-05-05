@@ -1,6 +1,7 @@
 import pika
 import json
 import time
+import redis
 from datetime import datetime
 import urllib.request as req
 import zipfile
@@ -237,51 +238,59 @@ SETTINGS = dict(
         d2sec="http://www.d2sec.com/exploits/elliot.xml",
         npm="https://api.nodesecurity.io/advisories",
     ),
-    cache_for_indexer = dict(
-        host="localhost",
-        port=6379,
-        db=3
-    ),
     start_year=2018,
-
+    cache_for_queue=dict(
+        host='localhost',
+        port=6379,
+        db=4
+    ),
+    channels=dict(
+        updater_incoming_queue="updater_incoming_queue",
+    ),
 )
 
+cache_for_queue = redis.StrictRedis(
+    host=SETTINGS["cache_for_queue"]["host"],
+    port=SETTINGS["cache_for_queue"]["port"],
+    db=SETTINGS["cache_for_queue"]["db"]
+)
+channel_for_queue = SETTINGS["channels"]["updater_incoming_queue"]
 
-queue_name_updater = "updater_queue"
+# queue_name_updater = "updater_queue"
 
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+# connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 
-channel = connection.channel()
+# channel = connection.channel()
 
-channel.queue_declare(queue=queue_name_updater)
+# channel.queue_declare(queue=queue_name_updater)
 
 # Populate
-current_year = datetime.now().year
-for year in range(SETTINGS["start_year"], current_year + 1):
-    start_time = time.time()
-    source = SETTINGS["sources"]["cve_base"] + str(year) + SETTINGS["sources"]["cve_base_postfix"]
-    cve_item, response = download_cve_file(source)
+# current_year = datetime.now().year
+# for year in range(SETTINGS["start_year"], current_year + 1):
+#     start_time = time.time()
+#     source = SETTINGS["sources"]["cve_base"] + str(year) + SETTINGS["sources"]["cve_base_postfix"]
+#     cve_item, response = download_cve_file(source)
 
-    parsed_cve_item = parse_cve_file(cve_item)
+#     parsed_cve_item = parse_cve_file(cve_item)
 
-    count = len(parsed_cve_item)
+#     count = len(parsed_cve_item)
 
-    print("Populate {} elements in CVE-{} takes {} sec.".format(count, year, time.time() - start_time))
+#     print("Populate {} elements in CVE-{} takes {} sec.".format(count, year, time.time() - start_time))
 
-    for element in parsed_cve_item:
-        body = json.dumps(element)
-        channel.basic_publish(exchange='', routing_key=queue_name_updater, body=body)
+#     for element in parsed_cve_item:
+#         body = json.dumps(element)
+#         channel.basic_publish(exchange='', routing_key=queue_name_updater, body=body)
 
-# Modified
+# # Modified
 
-modified_items, response = download_cve_file(SETTINGS["sources"]["cve_modified"])
-modified_parsed = parse_cve_file(modified_items)
+# modified_items, response = download_cve_file(SETTINGS["sources"]["cve_modified"])
+# modified_parsed = parse_cve_file(modified_items)
 
-print("Get {} modified elements from source".format(len(modified_parsed)))
+# print("Get {} modified elements from source".format(len(modified_parsed)))
 
-for element in modified_parsed:
-    body = json.dumps(element)
-    channel.basic_publish(exchange='', routing_key=queue_name_updater, body=body)
+# for element in modified_parsed:
+#     body = json.dumps(element)
+#     channel.basic_publish(exchange='', routing_key=queue_name_updater, body=body)
 
 
 # Recent
@@ -291,11 +300,18 @@ recent_parsed = parse_cve_file(recent_items)
 
 print("Get {} recent elements from source".format(len(recent_parsed)))
 
+# for element in recent_parsed:
+#     body = json.dumps(element)
+#     channel.basic_publish(exchange='', routing_key=queue_name_updater, body=body)
+
+
 for element in recent_parsed:
     body = json.dumps(element)
-    channel.basic_publish(exchange='', routing_key=queue_name_updater, body=body)
+    cache_for_queue.publish(channel_for_queue, body)
 
+command = dict(command="complete")
+body = json.dumps(command)
+cache_for_queue.publish(channel_for_queue, body)
 
-
-connection.close()
+# connection.close()
 print("Complete all.")

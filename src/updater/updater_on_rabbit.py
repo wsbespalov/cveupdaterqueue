@@ -5,36 +5,35 @@ import json
 import redis
 import urllib
 import string
-import threading
 from datetime import datetime
 from time import time
 
 import cpe as cpe_module
 
 SETTINGS = dict(
-    # for index
-    cache_for_index=dict(
+    cache=dict(
         host='localhost',
         port=6379,
         db=3
     ),
-    # for pubsub
-    cache_for_queue=dict(
+    storage=dict(
         host='localhost',
         port=6379,
         db=4
     ),
-    channels=dict(
-        # for pubsub
-        updater_incoming_queue="updater_incoming_queue",
-        # for processing
-        updater_processing_queue="updater_processing_queue"
+    queues=dict(
+        updater="updater_queue",
     ),
     collections=dict(
         separator="::",
         index="index",
         vulners="vulners"
     ),
+    pika=dict(
+        host="127.0.0.1",
+        port=5672,
+        no_ack=True
+    )
 )
 
 ##############################################################################
@@ -43,7 +42,7 @@ class UpdateIndexEngine(object):
 
     def __init__(self, settings={}):
         self.settings = settings
-        self.cache_settings = settings.get("cache_for_index", {})
+        self.cache_settings = settings.get("cache", {})
         self.cache_host = self.cache_settings.get("host", "localhost")
         self.cache_port = self.cache_settings.get("port", 6379)
         self.cache_db = self.cache_settings.get("db", 3)
@@ -258,8 +257,7 @@ class UpdateIndexEngine(object):
     def update_items_in_cache_index(self, items_to_update):
         count = 0
         for one_item in items_to_update:
-            # one_item_in_json = json.loads(one_item)
-            one_item_in_json = one_item
+            one_item_in_json = json.loads(one_item)
             cpe_strings = one_item_in_json["cpe"]["data"]
             for one_cpe_string in cpe_strings:
                 component_and_version = self.extract_component_and_version_from_cpe_string(
@@ -273,53 +271,47 @@ class UpdateIndexEngine(object):
                     self.append_item_in_index(one_item_in_json)
                     count += 1
 
+
+
 ##############################################################################
 
 updater_engine = UpdateIndexEngine(SETTINGS)
 
 ##############################################################################
 
-def callback():
-    import logging
-    logging.getLogger(__file__)
-    cache_for_queue = redis.StrictRedis(
-        host=SETTINGS["cache_for_queue"]["host"],
-        port=SETTINGS["cache_for_queue"]["port"],
-        db=SETTINGS["cache_for_queue"]["db"]
-    )
-    channel = SETTINGS["channels"]["updater_incoming_queue"]
-    sub = cache_for_queue.pubsub()
-    sub.subscribe(channel)
-    logging.info("Listening to {}".format(channel))
-    print("Listening to {}".format(channel))
-    exit_flag = True
-    while exit_flag:
-        for item in sub.listen():
-            data = item["data"]
-            if not str(data).__eq__("1"):
-                if isinstance(data, bytes):
-                    data = json.loads(data)
-                if isinstance(data, str):
-                    data = json.loads(data)
-                if data.get("command", "") == "complete":
-                    print("Complete job...exiting...")
-                    exit_flag = False
-                    break
-                else:
-                    # now without second @processing_queue@
-                    # cache_for_queue.rpush(queue, data)
-                    print('Receive: {}'.format(data))
-                    updater_engine.update_items_in_cache_index([data,])
+updater_queue_name = SETTINGS["queues"]["updater"]
 
+updater_connection = pika.BlockingConnection(
+    pika.ConnectionParameters(
+        host=SETTINGS["pika"]["host"],
+        port=SETTINGS["pika"]["port"],
+        credentials=pika.PlainCredentials('guest', 'guest')
+    )
+)
+
+updater_channel = updater_connection.channel()
+updater_channel.queue_declare(queue=updater_queue_name)
+
+def updater_callback(ch, method, properties, body):
+    mybody = json.loads(body)
+    print("Receive payload: {}".format(mybody))
+    items_to_update = list()
+    items_to_update.append(mybody)
+    updater_engine.update_items_in_cache_index(items_to_update)
+
+updater_channel.basic_consume(
+    updater_callback,
+    queue=updater_queue_name,
+    no_ack=bool(SETTINGS["pika"]["no_ack"])
+)
 
 ##############################################################################
 
 def main():
     print("Start Updater listener...")
-    # t = threading.Thread(target=callback)
-    # t.setDaemon(True)
-    # t.start()
-    callback()
+
+    updater_channel.start_consuming()
+
 
 if __name__ == "__main__":
     sys.exit(main())
