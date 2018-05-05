@@ -1,0 +1,41 @@
+[
+    {
+        "_id": "5a44972a9ce7126433f16903",
+        "Published": "2017-10-22T21:29:13.000Z",
+        "Modified": "2017-10-27T09:52:55.000Z",
+        "access": {
+            "vector": "NETWORK",
+            "complexity": "MEDIUM",
+            "authentication": "NONE"
+        },
+        "impact": {
+            "confidentiality": "PARTIAL",
+            "integrity": "PARTIAL",
+            "availability": "PARTIAL"
+        },
+        "cvss_time": "Thu Oct 26 2017 17:22:53 GMT+0300 (+03)",
+        "cvss": "6.8",
+        "cwe": "CWE-119",
+        "cwe_id": "119",
+        "title": "CVE-2017-7134",
+        "description": "An issue was discovered in certain Apple products. Xcode before 9 is affected. The issue involves the "ld64" component. It allows remote attackers to execute arbitrary code or cause a denial of service (memory corruption and application crash) via a crafted Mach-O file.",
+        "rank": 6,
+        "__v": 0,
+        "capec" : [
+            "[Object] from CAPEC DB",
+            "[Object] from CAPEC DB",
+            "[Object] from CAPEC DB"
+        ],
+        "vulnerable_configurations": [
+
+        ],
+        "vulnerable_configuration": [
+            "cpe:2.3:a:apple:xcode:8.3.3"
+        ],
+        "cve_references" : [
+            "http://www.securityfocus.com/bid/100894",
+            "http://www.securitytracker.com/id/1039386",
+            "https://support.apple.com/HT208103"
+        ]
+    }
+]

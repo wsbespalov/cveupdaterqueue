@@ -1,4 +1,5 @@
 import re
+import sys
 import pika
 import json
 import redis
@@ -284,7 +285,7 @@ updater_connection = pika.BlockingConnection(
     pika.ConnectionParameters(
         host=SETTINGS["pika"]["host"],
         port=SETTINGS["pika"]["port"],
-        credentials = pika.PlainCredentials('guest', 'guest')
+        credentials=pika.PlainCredentials('guest', 'guest')
     )
 )
 
@@ -304,8 +305,13 @@ updater_channel.basic_consume(
     no_ack=bool(SETTINGS["pika"]["no_ack"])
 )
 
-print("Start Updater listener...")
-
-updater_channel.start_consuming()
-
 ##############################################################################
+
+def main():
+    print("Start Updater listener...")
+
+    updater_channel.start_consuming()
+
+
+if __name__ == "__main__":
+    sys.exit(main())
